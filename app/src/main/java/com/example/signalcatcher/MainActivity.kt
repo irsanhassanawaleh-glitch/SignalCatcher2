@@ -104,7 +104,7 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             telephonyCallback = object : TelephonyCallback(), TelephonyCallback.SignalStrengthsListener {
                 override fun onSignalStrengthsChanged(signalStrength: SignalStrength) {
-                    updateSignalUi(signalStrength.dbm, signalStrength.level)
+                    updateSignalUi(signalStrength.level)
                     updateCellList()
                 }
             }
@@ -113,7 +113,7 @@ class MainActivity : AppCompatActivity() {
             legacyPhoneStateListener = object : PhoneStateListener() {
                 @Deprecated("Deprecated in Java")
                 override fun onSignalStrengthsChanged(signalStrength: SignalStrength) {
-                    updateSignalUi(signalStrength.dbm, signalStrength.level)
+                    updateSignalUi(signalStrength.level)
                     updateCellList()
                 }
             }
@@ -130,7 +130,7 @@ class MainActivity : AppCompatActivity() {
 
         val signalStrength = telephonyManager.signalStrength
         if (signalStrength != null) {
-            updateSignalUi(signalStrength.dbm, signalStrength.level)
+            updateSignalUi(signalStrength.level)
         }
         updateCellList()
     }
@@ -149,32 +149,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun cellToRow(cell: CellInfo): CellRow? {
         return when (cell) {
-            is CellInfoLte -> CellRow(
-                "LTE (4G)",
-                cell.cellSignalStrength.dbm,
-                cell.cellSignalStrength.level
-            )
-            is CellInfoNr -> CellRow(
-                "NR (5G)",
-                cell.cellSignalStrength.dbm,
-                cell.cellSignalStrength.level
-            )
-            is CellInfoWcdma -> CellRow(
-                "WCDMA (3G)",
-                cell.cellSignalStrength.dbm,
-                cell.cellSignalStrength.level
-            )
-            is CellInfoGsm -> CellRow(
-                "GSM (2G)",
-                cell.cellSignalStrength.dbm,
-                cell.cellSignalStrength.level
-            )
+            is CellInfoLte -> CellRow("LTE (4G)", cell.cellSignalStrength.level)
+            is CellInfoNr -> CellRow("NR (5G)", cell.cellSignalStrength.level)
+            is CellInfoWcdma -> CellRow("WCDMA (3G)", cell.cellSignalStrength.level)
+            is CellInfoGsm -> CellRow("GSM (2G)", cell.cellSignalStrength.level)
             else -> null
         }
     }
 
-    private fun updateSignalUi(dbm: Int, level: Int) {
-        tvSignalDbm.text = "Puissance : $dbm dBm"
+    private fun updateSignalUi(level: Int) {
         val levelLabel = when (level) {
             0 -> "Très faible"
             1 -> "Faible"
@@ -183,6 +166,7 @@ class MainActivity : AppCompatActivity() {
             4 -> "Excellent"
             else -> "Inconnu"
         }
+        tvSignalDbm.text = "Niveau brut : $level / 4"
         tvSignalLevel.text = "Niveau : $levelLabel"
         tvAdvice.text = adviceFor(level)
     }
@@ -219,7 +203,7 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-data class CellRow(val type: String, val dbm: Int, val level: Int)
+data class CellRow(val type: String, val level: Int)
 
 class CellAdapter(private var items: List<CellRow>) :
     RecyclerView.Adapter<CellAdapter.CellViewHolder>() {
@@ -240,7 +224,7 @@ class CellAdapter(private var items: List<CellRow>) :
 
     override fun onBindViewHolder(holder: CellViewHolder, position: Int) {
         val row = items[position]
-        holder.textView.text = "${row.type} — ${row.dbm} dBm (niveau ${row.level}/4)"
+        holder.textView.text = "${row.type} — niveau ${row.level}/4"
     }
 
     override fun getItemCount(): Int = items.size
